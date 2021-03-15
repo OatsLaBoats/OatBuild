@@ -176,12 +176,14 @@ def build_gcc_command(compileInfo: CompileInfo) -> str:
     if compileInfo.outputType == "executable":
         command = command + " -o " + compileInfo.projectName + get_executable_file_extension()
         command = command + " " + str.join(" ", compileInfo.linkerFlags)
-        command = command + " " + get_gcc_libraries(compileInfo.libraries)
+        command = command + " " + str.join(" ", compileInfo.objectFiles)
+        command = command + " " + str.join(" ", compileInfo.libraries)
     
     elif compileInfo.outputType == "shared":
         command = command + "-shared -o " + compileInfo.projectName + get_executable_file_extension()
         command = command + " " + str.join(" ", compileInfo.linkerFlags)
-        command = command + " " + get_gcc_libraries(compileInfo.libraries)
+        command = command + " " + str.join(" ", compileInfo.objectFiles)
+        command = command + " " + str.join(" ", compileInfo.libraries)
 
     elif compileInfo.outputType == "object":
         command = command + " -c"
@@ -207,27 +209,19 @@ def build_clang_command(compileInfo: CompileInfo) -> str:
     if compileInfo.outputType == "executable":
         command = command + " -o " + compileInfo.projectName + get_executable_file_extension()
         command = command + " " + str.join(" ", compileInfo.linkerFlags)
-        command = command + " " + get_gcc_libraries(compileInfo.libraries)
+        command = command + " " + str.join(" ", compileInfo.objectFiles)
+        command = command + " " + str.join(" ", compileInfo.libraries)
     
     elif compileInfo.outputType == "shared":
         command = command + "-shared -o " + compileInfo.projectName + get_executable_file_extension()
         command = command + " " + str.join(" ", compileInfo.linkerFlags)
-        command = command + " " + get_gcc_libraries(compileInfo.libraries)
+        command = command + " " + str.join(" ", compileInfo.objectFiles)
+        command = command + " " + str.join(" ", compileInfo.libraries)
 
     elif compileInfo.outputType == "object":
         command = command + " -c"
 
     return command
-
-    
-def get_gcc_libraries(libraries: "list[str]") -> str:
-    result = ""
-    for lib in libraries:
-        if lib.endswith(get_object_file_extension()):
-            result = result + " " + lib
-        else:
-            result = result + " -l" + lib
-    return result
 
 
 def build_clang_cl_command(compileInfo: CompileInfo) -> str:
@@ -247,12 +241,14 @@ def build_clang_cl_command(compileInfo: CompileInfo) -> str:
     if compileInfo.outputType == "executable":
         command = command + " /o " + compileInfo.projectName + get_executable_file_extension()
         command = command + " /link /INCREMENTAL:NO /OPT:REF " + str.join(" ", compileInfo.linkerFlags)
-        command = command + " " + get_cl_libraries(compileInfo.libraries)
+        command = command + " " + str.join(" ", compileInfo.objectFiles)
+        command = command + " " + str.join(" ", compileInfo.libraries)
     
     elif compileInfo.outputType == "shared":
         command = command + " /o " + compileInfo.projectName + get_executable_file_extension()
         command = command + " /link /INCREMENTAL:NO /OPT:REF " + str.join(" ", compileInfo.linkerFlags)
-        command = command + " " + get_cl_libraries(compileInfo.libraries) + " /DLL"
+        command = command + " " + str.join(" ", compileInfo.objectFiles)
+        command = command + " " + str.join(" ", compileInfo.libraries) + " /DLL"
 
     elif compileInfo.outputType == "object":
         command = command + " /c /Fo\"" + compileInfo.outputType + "\"\\"
@@ -276,12 +272,14 @@ def build_cl_command(compileInfo: CompileInfo) -> str:
 
     if compileInfo.outputType == "executable":
         command = command + " /link /INCREMENTAL:NO /OPT:REF " + str.join(" ", compileInfo.linkerFlags)
-        command = command + " " + get_cl_libraries(compileInfo.libraries)
+        command = command + " " + str.join(" ", compileInfo.objectFiles)
+        command = command + " " + str.join(" ", compileInfo.libraries)
         command = command + " /OUT:" + compileInfo.projectName + get_executable_file_extension()
     
     elif compileInfo.outputType == "shared":
         command = command + " /link /INCREMENTAL:NO /OPT:REF " + str.join(" ", compileInfo.linkerFlags)
-        command = command + " " + get_cl_libraries(compileInfo.libraries) + " /DLL"
+        command = command + " " + str.join(" ", compileInfo.objectFiles)
+        command = command + " " + str.join(" ", compileInfo.libraries) + " /DLL"
         command = command + " /OUT:" + compileInfo.projectName + get_executable_file_extension()
 
     elif compileInfo.outputType == "object":
@@ -293,7 +291,7 @@ def build_cl_command(compileInfo: CompileInfo) -> str:
 def get_cl_libraries(libraries: str) -> str:
     result = ""
     for lib in libraries:
-        result = result + " " + lib + get_static_library_file_extension()
+        result = result + " " + lib
     return result
 
 
@@ -315,7 +313,7 @@ def get_shared_library_file_extension() -> str:
 
 def get_object_file_extension() -> str:
     osName = platform.system()
-    if osName == "Window":
+    if osName == "Windows":
         return ".obj"
     else:
         return ".o"
@@ -323,7 +321,7 @@ def get_object_file_extension() -> str:
 
 def get_static_library_file_extension() -> str:
     osName = platform.system()
-    if osName == "Window":
+    if osName == "Windows":
         return ".lib"
     else:
         return ".a"
@@ -467,13 +465,13 @@ def handle_command(tokenList: TokenList, compileInfo: CompileInfo) -> None:
         params = complex_command(tokenList, command)
         if params != None:
             for param in params:
-                compileInfo.files.append(param.lexeme)
+                compileInfo.files.append("\"" + param.lexeme + "\"")
 
     elif command.lexeme == "AddSourcePath":
         params = complex_command(tokenList, command)
         if params != None:
             for param in params:
-                compileInfo.sourcePaths.append(param.lexeme)
+                compileInfo.sourcePaths.append("\"" + param.lexeme + "\"")
         
     elif command.lexeme == "AddConstant":
         params = complex_command(tokenList, command)
@@ -485,19 +483,19 @@ def handle_command(tokenList: TokenList, compileInfo: CompileInfo) -> None:
         params = complex_command(tokenList, command)
         if params != None:
             for param in params:
-                compileInfo.includePaths.append(param.lexeme)
+                compileInfo.includePaths.append("\"" + param.lexeme + "\"")
 
     elif command.lexeme == "AddLibrary":
         params = complex_command(tokenList, command)
         if params != None:
             for param in params:
-                compileInfo.libraries.append(param.lexeme)
+                compileInfo.libraries.append("\"" + param.lexeme + get_static_library_file_extension() + "\"")
 
     elif command.lexeme == "AddObjectFile":
         params = complex_command(tokenList, command)
         if params != None:
             for param in params:
-                compileInfo.objectFiles.append(param.lexeme)
+                compileInfo.objectFiles.append("\"" + param.lexeme + get_object_file_extension() + "\"")
         
     elif command.lexeme == "AddCompilerFlag":
         params = complex_command(tokenList, command)
