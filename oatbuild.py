@@ -37,23 +37,23 @@ class TokenType(Enum):
 
 
 class Token:
-    def __init__(self, type: int, lexeme: str, line: int):
-        self.type = type
+    def __init__(self, tokenType: int, lexeme: str, line: int):
+        self.tokenType = tokenType
         self.lexeme = lexeme
         self.line = line
 
     def print(self) -> None:
         print(f"[{self.line}]", end = " ")
 
-        if self.type == TokenType.STRING:
+        if self.tokenType == TokenType.STRING:
             print("     STRING", end = " ")
-        elif self.type == TokenType.LEFT_PAREN:
+        elif self.tokenType == TokenType.LEFT_PAREN:
             print(" LEFT_PAREN", end = " ")
-        elif self.type == TokenType.RIGHT_PAREN:
+        elif self.tokenType == TokenType.RIGHT_PAREN:
             print("RIGHT_PAREN", end = " ")
-        elif self.type == TokenType.COMMA:
+        elif self.tokenType == TokenType.COMMA:
             print("      COMMA", end = " ")
-        elif self.type == TokenType.LINE_END:
+        elif self.tokenType == TokenType.LINE_END:
             print("   LINE_END", end = " ")
 
         print(f"{self.lexeme} ")
@@ -64,8 +64,8 @@ class TokenList:
         self.tokens: "list[Token]" = []
         self.current = 0
 
-    def add(self, type: int, lexeme: str, line: int) -> None:
-        self.tokens.append(Token(type, lexeme, line))
+    def add(self, tokenType: int, lexeme: str, line: int) -> None:
+        self.tokens.append(Token(tokenType, lexeme, line))
 
     def advance(self) -> Token:
         self.current += 1
@@ -83,7 +83,7 @@ class TokenList:
 
     def skip_line(self) -> None:
         cur = self.advance()
-        while cur != None and cur.type != TokenType.LINE_END:
+        while cur != None and cur.tokenType != TokenType.LINE_END:
             cur = self.advance()
 
 
@@ -166,6 +166,7 @@ def build_gcc_command(compileInfo: CompileInfo) -> str:
     else:
         command = command + " -O0 -g"
 
+    command = command + " -m" + compileInfo.arch
     command = command + " " + str.join(" ", compileInfo.compilerFlags)
     command = command + " " + str.join(" -D", compileInfo.constants)
     command = command + " " + str.join(" -I", compileInfo.includePaths)
@@ -189,13 +190,14 @@ def build_gcc_command(compileInfo: CompileInfo) -> str:
 
 
 def build_clang_command(compileInfo: CompileInfo) -> str:
-    command = "clang -mno-incremental-linker-compatible -Wall -str=" + compileInfo.languageVersion
+    command = "clang -mno-incremental-linker-compatible -Wall -std=" + compileInfo.languageVersion
 
     if compileInfo.buildType == "release":
         command = command + " -O2"
     else:
         command = command + " -O0 -g"
 
+    command = command + " -m" + compileInfo.arch
     command = command + " " + str.join(" ", compileInfo.compilerFlags)
     command = command + " " + str.join(" -D", compileInfo.constants)
     command = command + " " + str.join(" -I", compileInfo.includePaths)
@@ -229,7 +231,7 @@ def get_gcc_libraries(libraries: "list[str]") -> str:
 
 
 def build_clang_cl_command(compileInfo: CompileInfo) -> str:
-    command = "clang-cl /FC /W4 -Xclang -std=" + compileInfo.languageVersion
+    command = "clang-cl /FC /W4 -Xclang -std=" + compileInfo.languageVersion + " -m" + compileInfo.arch
 
     if compileInfo.buildType == "release":
         command = command + " /O2 /Oi /fp:fast"
@@ -258,7 +260,7 @@ def build_clang_cl_command(compileInfo: CompileInfo) -> str:
     return command
 
 
-def build_cl_command(compileInfo: CompileInfo) -> str:
+def build_cl_command(compileInfo: CompileInfo) -> str:    
     command = "cl /FC /W4 /std:" + compileInfo.languageVersion
 
     if compileInfo.buildType == "release":
@@ -399,7 +401,7 @@ def parse_tokens(tokenList: TokenList) -> CompileInfo:
     while(not tokenList.is_at_end()):
         token = tokenList.peek()
         
-        if token.type == TokenType.STRING:
+        if token.tokenType == TokenType.STRING:
             handle_command(tokenList, compileInfo)
         else:
             print_error(f"[{token.line}] at -> \"{token.lexeme}\" Commands must begin with a string.")
@@ -530,7 +532,7 @@ def complex_command(tokenList: TokenList, command: Token) -> "list[Token]":
 
 def get_complex_command_params(tokenList: TokenList, command: Token) -> "list[Token]":
     lparen = tokenList.advance()
-    if lparen == None or lparen.type != TokenType.LEFT_PAREN:
+    if lparen == None or lparen.tokenType != TokenType.LEFT_PAREN:
         print_error(f"[{command.line}] at -> \"{command.lexeme}\" Expected \"(\" after command.")
         return None
 
@@ -540,7 +542,7 @@ def get_complex_command_params(tokenList: TokenList, command: Token) -> "list[To
         return None
 
     rparen = tokenList.advance()
-    if rparen == None or rparen.type != TokenType.RIGHT_PAREN:
+    if rparen == None or rparen.tokenType != TokenType.RIGHT_PAREN:
         print_error(f"[{command.line}] at -> \"{command.lexeme}\" Expected \")\" after parameters.")
         return None
 
@@ -552,7 +554,7 @@ def consume_param(tokenList: TokenList, result: "list[Token]") -> None:
     if param == None:
         return
 
-    if param.type == TokenType.STRING:
+    if param.tokenType == TokenType.STRING:
         tokenList.advance()
         result.append(param)
         consume_comma(tokenList, result)
@@ -563,7 +565,7 @@ def consume_comma(tokenList: TokenList, result: "list[Token]") -> None:
     if comma == None:
         return
 
-    if comma.type == TokenType.COMMA:
+    if comma.tokenType == TokenType.COMMA:
         tokenList.advance()
         consume_param(tokenList, result)
 
@@ -584,7 +586,7 @@ def simple_command(tokenList: TokenList, command: Token) -> Token:
 
 def get_simple_command_param(tokenList: TokenList, command: Token) -> Token:
     lparen = tokenList.advance()
-    if lparen == None or lparen.type != TokenType.LEFT_PAREN:
+    if lparen == None or lparen.tokenType != TokenType.LEFT_PAREN:
         print_error(f"[{command.line}] at -> \"{command.lexeme}\" Expected \"(\" after command.")
         return None
 
@@ -593,7 +595,7 @@ def get_simple_command_param(tokenList: TokenList, command: Token) -> Token:
         return None
 
     rparen = tokenList.advance()
-    if rparen == None or rparen.type != TokenType.RIGHT_PAREN:
+    if rparen == None or rparen.tokenType != TokenType.RIGHT_PAREN:
         print_error(f"[{command.line}] at -> \"{command.lexeme}\" Expected \")\" after parameter.")
         return None
 
