@@ -168,8 +168,8 @@ def build_gcc_command(compileInfo: CompileInfo) -> str:
 
     command = command + " -m" + compileInfo.arch
     command = command + " " + str.join(" ", compileInfo.compilerFlags)
-    command = command + " " + str.join(" -D", compileInfo.constants)
-    command = command + " " + str.join(" -I", compileInfo.includePaths)
+    command = command + " -D" + str.join(" -D", compileInfo.constants)
+    command = command + " -I" + str.join(" -I", compileInfo.includePaths)
     command = command + " " + str.join(" ", compileInfo.files)
     command = command + " " + str.join(" ", compileInfo.sourcePaths)
 
@@ -199,8 +199,8 @@ def build_clang_command(compileInfo: CompileInfo) -> str:
 
     command = command + " -m" + compileInfo.arch
     command = command + " " + str.join(" ", compileInfo.compilerFlags)
-    command = command + " " + str.join(" -D", compileInfo.constants)
-    command = command + " " + str.join(" -I", compileInfo.includePaths)
+    command = command + " -D" + str.join(" -D", compileInfo.constants)
+    command = command + " -I" + str.join(" -I", compileInfo.includePaths)
     command = command + " " + str.join(" ", compileInfo.files)
     command = command + " " + str.join(" ", compileInfo.sourcePaths)
 
@@ -239,8 +239,8 @@ def build_clang_cl_command(compileInfo: CompileInfo) -> str:
         command = command + " /Od /Zi"
 
     command = command + " " + str.join(" ", compileInfo.compilerFlags)
-    command = command + " " + str.join(" -D", compileInfo.constants)
-    command = command + " " + str.join(" -I", compileInfo.includePaths)
+    command = command + " -D" + str.join(" -D", compileInfo.constants)
+    command = command + " -I" + str.join(" -I", compileInfo.includePaths)
     command = command + " " + str.join(" ", compileInfo.files)
     command = command + " " + str.join(" ", compileInfo.sourcePaths)
 
@@ -269,8 +269,8 @@ def build_cl_command(compileInfo: CompileInfo) -> str:
         command = command + " /Od /Zi"
 
     command = command + " " + str.join(" ", compileInfo.compilerFlags)
-    command = command + " " + str.join(" -D", compileInfo.constants)
-    command = command + " " + str.join(" -I", compileInfo.includePaths)
+    command = command + " -D" + str.join(" -D", compileInfo.constants)
+    command = command + " -I" + str.join(" -I", compileInfo.includePaths)
     command = command + " " + str.join(" ", compileInfo.files)
     command = command + " " + str.join(" ", compileInfo.sourcePaths)
 
@@ -358,7 +358,7 @@ Command list:
 
 
 def is_valid_character(c: str) -> bool:
-    return c.isalnum() or c == "_" or c == "-" or c == "."
+    return c.isalnum() or c in {"_", "-", ".", "/", "\\", ":", "="}
 
 
 def scan_file(fileName: str) -> TokenList:
